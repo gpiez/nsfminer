@@ -28,8 +28,8 @@ cable_configure_toolchain(DEFAULT cxx11)
 set(HUNTER_CONFIGURATION_TYPES Release CACHE STRING "Build type of Hunter packages")
 set(HUNTER_JOBS_NUMBER 6 CACHE STRING "Number of parallel builds used by Hunter")
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.23.112.tar.gz"
-    SHA1 "4b894e1d5d203f0cc9a77431dbb1b486ab6f4430"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.23.289.tar.gz"
+    SHA1 "7d7323704780200a1575fc089d26f8a8a393a1fa"
     LOCAL
 )
 
@@ -41,9 +41,7 @@ cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo)
 option(ETHASHCL "Build with OpenCL mining" ON)
 option(ETHASHCUDA "Build with CUDA mining" ON)
 option(ETHASHCPU "Build with CPU mining (only for development)" OFF)
-option(ETHDBUS "Build with D-Bus support" OFF)
 option(APICORE "Build with API Server support" ON)
-option(BINKERN "Install AMD binary kernels" OFF)
 option(DEVBUILD "Log developer metrics" OFF)
 
 # propagates CMake configuration options to the compiler
@@ -57,22 +55,16 @@ function(configureProject)
     if (ETHASHCPU)
         add_definitions(-DETH_ETHASHCPU)
     endif()
-    if (ETHDBUS)
-        add_definitions(-DETH_DBUS)
-    endif()
     if (APICORE)
         add_definitions(-DAPI_CORE)
-    endif()
-    if (BINKERN)
-        add_definitions(-DBIN_KERN)
     endif()
     if (DEVBUILD)
         add_definitions(-DDEV_BUILD)
     endif()
 endfunction()
 
-hunter_add_package(Boost COMPONENTS system filesystem thread)
-find_package(Boost CONFIG REQUIRED COMPONENTS system filesystem thread)
+hunter_add_package(Boost COMPONENTS system filesystem thread program_options)
+find_package(Boost CONFIG REQUIRED COMPONENTS system filesystem thread program_options)
 
 hunter_add_package(jsoncpp)
 find_package(jsoncpp CONFIG REQUIRED)
@@ -89,9 +81,7 @@ message("----------------------------------------------------------------- compo
 message("-- ETHASHCL         Build OpenCL components                      ${ETHASHCL}")
 message("-- ETHASHCUDA       Build CUDA components                        ${ETHASHCUDA}")
 message("-- ETHASHCPU        Build CPU components (only for development)  ${ETHASHCPU}")
-message("-- ETHDBUS          Build D-Bus components                       ${ETHDBUS}")
 message("-- APICORE          Build API Server components                  ${APICORE}")
-message("-- BINKERN          Install AMD binary kernels                   ${BINKERN}")
 message("-- DEVBUILD         Build with dev logging                       ${DEVBUILD}")
 message("----------------------------------------------------------------------------")
 message("")
@@ -110,9 +100,6 @@ add_subdirectory(libpool)
 
 if (ETHASHCL)
     add_subdirectory(libcl)
-    if (BINKERN)
-        add_subdirectory(libcl/kernels)
-    endif()
 endif ()
 if (ETHASHCUDA)
     add_subdirectory(libcuda)

@@ -10,16 +10,16 @@
 
 #if defined(__linux__)
 #include <execinfo.h>
+#include <pwd.h>
 #endif
 
 #include <algorithm>
 #include <condition_variable>
+#include <string>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/function.hpp>
 #include <boost/program_options.hpp>
-#include <boost/token_functions.hpp>
-#include <boost/token_iterator.hpp>
-#include <boost/tokenizer.hpp>
 
 #include <openssl/crypto.h>
 
@@ -62,10 +62,6 @@ mutex g_seqDAGMutex;
 
 condition_variable g_shouldstop;
 boost::asio::io_service g_io_service; // The IO service itself
-
-#if ETH_DBUS
-#include <nsfminer/DBusInt.h>
-#endif
 
 static bool should_list;
 
@@ -116,6 +112,19 @@ static void headers(vector<string>& h, bool color) {
     boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
     ss << white << "3rd Party: OpenSSL " << sv[1] << ", Ethash " << ethash::version;
     h.push_back(ss.str());
+    char username[64];
+#if defined(__linux__)
+    uid_t uid = geteuid();
+    struct passwd* pw = getpwuid(uid);
+    strcpy(username, pw ? pw->pw_name : "unknown");
+#else
+    DWORD size = sizeof(username) - 1;
+    if (!GetUserName(username, &size))
+        strcpy(username, "unknown");
+#endif
+    ss.str("");
+    ss << (color ? EthWhite : "") << "Running as user: " << username;
+    h.push_back(ss.str());
 }
 
 static void on_help_module(string m) {
@@ -135,7 +144,7 @@ static void on_help_module(string m) {
 #ifdef _WIN32
             "env",
 #endif
-            "con", "test", "misc", "exp", "test", "conf", "reboot"
+            "con", "test", "misc", "test", "conf", "reboot"
     });
     if (find(modules.begin(), modules.end(), m) != modules.end())
         return;
@@ -158,7 +167,7 @@ static void on_nonce(string n) {
 static void on_verbosity(unsigned u) {
     if (u < LOG_NEXT)
         return;
-    throw boost::program_options::error("The --verbosity value must be less than " + to_string(u));
+    throw boost::program_options::error("The --verbosity value must be less than " + to_string(LOG_NEXT));
 }
 
 static void on_hwmon(unsigned u) {
@@ -234,9 +243,6 @@ class MinerCLI {
                 }
             } else
                 cnote << Farm::f().Telemetry().str();
-#if ETH_DBUS
-            dbusint.send(Farm::f().Telemetry().str().c_str());
-#endif
             // Restart timer
             m_cliDisplayTimer.expires_from_now(boost::posix_time::seconds(m_cliDisplayInterval));
             m_cliDisplayTimer.async_wait(m_io_strand.wrap(
@@ -409,8 +415,6 @@ class MinerCLI {
                 "Set output verbosity level. Use the sum of :\n"
                 "1 - log per GPU status lines\n"
                 "2 - log per GPU solutions\n"
-                "4 - log per GPU calculated effective hash rate\n"
-                "    (Experimental, see -H exp)"
 #ifdef DEV_BUILD
                 "\n16 - log stratum messages\n"
                 "32 - log connection events\n"
@@ -498,11 +502,6 @@ class MinerCLI {
                 "temp drops below this threshold. Implies --HWMON 1. "
                 "Must be lower than --tstart")
 
-            ("multi,m",
-
-                "[DEPRECATED] Use --verbosity instead.\n"
-                "Use multi-line status display")
-
             ("nonce,n", value<string>()->default_value("")->notifier(on_nonce),
 
                 "Hex string specifying the upper bits of miner's "
@@ -558,11 +557,7 @@ class MinerCLI {
 
             ("cl-split",
 
-                "Force split-DAG mode. May improve performance on older GPU models.")
-
-            ("cl-bin",
-
-                "Try to load binary kernel");
+                "Force split-DAG mode. May improve performance on older GPU models.");
 #endif
         test.add_options()
 
@@ -614,11 +609,8 @@ class MinerCLI {
                 // Read the whole file into a string
                 stringstream ss;
                 ss << ifs.rdbuf();
-                boost::char_separator<char> sep(" \n\r");
-                string sstr = ss.str();
-                boost::tokenizer<boost::char_separator<char>> tok(sstr, sep);
                 vector<string> args;
-                copy(tok.begin(), tok.end(), back_inserter(args));
+                boost::split(args, ss.str(), boost::is_any_of(" \n\r\t"), boost::token_compress_on);
                 store(command_line_parser(args).options(all).run(), vm);
             }
 
@@ -767,13 +759,6 @@ class MinerCLI {
                      << "    the search path.\n\n"
                      << "    For Linux:   reboot.sh\n\n"
                      << "    For Windows: reboot.bat\n\n";
-            else if (s == "exp")
-                cout << "\nMiner experimental features:\n\n"
-                     << "    The 'log effective hash rate' verbosity option enables\n"
-                     << "    the calculation and per GPU display of the effective hash rate\n"
-                     << "    based on shares accepted over time.\n"
-                     << "    Effective hash rates will only become statistically significant\n"
-                     << "    after many hours.\n\n";
             return false;
         }
 
@@ -801,8 +786,6 @@ class MinerCLI {
 
         m_cliDisplayInterval = vm["display-interval"].as<unsigned>();
         should_list = m_shouldListDevices = vm.count("list-devices");
-        if (vm.count("multi"))
-            g_logOptions |= LOG_MULTI;
 
         if (vm.count("devices"))
             for (auto& d : vm["devices"].as<vector<unsigned>>())
@@ -818,7 +801,6 @@ class MinerCLI {
 
 #if ETH_ETHASHCL
         m_FarmSettings.clGroupSize = vm["cl-work"].as<unsigned>();
-        m_FarmSettings.clBin = vm.count("cl-bin");
         m_FarmSettings.clSplit = vm.count("cl-split");
 #endif
 
@@ -1135,9 +1117,6 @@ class MinerCLI {
     string m_api_password;            // API interface write protection password
 #endif
 
-#if ETH_DBUS
-    DBusInt dbusint;
-#endif
 };
 
 int main(int argc, char** argv) {

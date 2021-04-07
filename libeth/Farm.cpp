@@ -199,7 +199,6 @@ bool Farm::start() {
                 minerTelemetry.prefix = "cl";
                 if (m_Settings.clGroupSize)
                     it->second.clGroupSize = m_Settings.clGroupSize;
-                it->second.clBin = m_Settings.clBin;
                 it->second.clSplit = m_Settings.clSplit;
                 m_miners.push_back(shared_ptr<Miner>(new CLMiner(m_miners.size(), it->second)));
             }
@@ -387,17 +386,12 @@ void Farm::collectData(const boost::system::error_code& ec) {
 
     // Reset hashrate (it will accumulate from miners)
     float farm_hr = 0.0f;
-    double difficulty(PoolManager::p().getPoolDifficulty());
-    unsigned colAccepted = atomic_exchange((atomic<unsigned>*)&m_telemetry.farm.solutions.collectAcceptd, 0u);
-    m_telemetry.farm.effectiveShares += difficulty * colAccepted;
 
     // Process miners
     for (auto const& miner : m_miners) {
         int minerIdx = miner->Index();
         float hr = (miner->paused() ? 0.0f : miner->RetrieveHashRate());
         farm_hr += hr;
-        colAccepted = atomic_exchange((atomic<unsigned>*)&m_telemetry.miners.at(minerIdx).solutions.collectAcceptd, 0u);
-        m_telemetry.miners.at(minerIdx).effectiveShares += difficulty * colAccepted;
         m_telemetry.miners.at(minerIdx).hashrate = hr;
         m_telemetry.miners.at(minerIdx).paused = miner->paused();
 
