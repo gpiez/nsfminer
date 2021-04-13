@@ -483,6 +483,11 @@ class MinerCLI {
                 "Use syslog appropriate output (drop timestamp "
                 "and channel prefix)")
 
+            ("validate",
+
+                "Validate solution before submitting")
+
+
 #if ETH_ETHASHCL || ETH_ETHASHCUDA || ETH_ETHASH_CPU
 
             ("list-devices,L",
@@ -793,6 +798,7 @@ class MinerCLI {
 
         m_FarmSettings.hwMon = vm["HWMON"].as<unsigned>();
         m_FarmSettings.nonce = vm["nonce"].as<string>();
+        m_FarmSettings.validate = vm.count("validate");
 
 #if ETH_ETHASHCUDA
         m_FarmSettings.cuBlockSize = vm["cu-block"].as<unsigned>();
