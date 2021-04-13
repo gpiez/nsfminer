@@ -351,14 +351,15 @@ void Farm::submitProof(Solution const& _s) {
 }
 
 void Farm::submitProofAsync(Solution const& _s) {
-    Result r = EthashAux::eval(_s.work.epoch, _s.work.header, _s.nonce);
-    if (r.value > _s.work.boundary) {
-        accountSolution(_s.midx, SolutionAccountingEnum::Failed);
-        cwarn << "GPU " << _s.midx << " gave incorrect result. Lower overclocking values if it happens frequently.";
-        return;
+    if (m_Settings.validate) {
+        Result r = EthashAux::eval(_s.work.epoch, _s.work.header, _s.nonce);
+        if (r.value > _s.work.boundary) {
+            accountSolution(_s.midx, SolutionAccountingEnum::Failed);
+            cwarn << "GPU " << _s.midx << " gave incorrect result. Lower overclocking values if it happens frequently.";
+            return;
+        }
     }
-    m_onSolutionFound(Solution{_s.nonce, r.mixHash, _s.work, _s.tstamp, _s.midx});
-
+    m_onSolutionFound(Solution{_s.nonce, _s.mixHash, _s.work, _s.tstamp, _s.midx});
 #ifdef DEV_BUILD
     if (g_logOptions & LOG_SUBMIT)
         cnote << "Submit time: "
