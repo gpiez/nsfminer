@@ -100,11 +100,13 @@ void ethash_generate_dag(uint64_t dag_size, uint32_t gridSize, uint32_t blockSiz
     CUDA_CALL(cudaGetLastError());
 }
 
-void set_constants(hash128_t* _dag, uint32_t _dag_size, hash64_t* _light, uint32_t _light_size) {
+void set_constants(hash128_t* _dag, uint32_t _dag_size, hash64_t* _light, uint32_t _light_size, uint32_t inv_dag, int shift_dag) {
     CUDA_CALL(cudaMemcpyToSymbol(d_dag, &_dag, sizeof(hash128_t*)));
     CUDA_CALL(cudaMemcpyToSymbol(d_dag_size, &_dag_size, sizeof(uint32_t)));
     CUDA_CALL(cudaMemcpyToSymbol(d_light, &_light, sizeof(hash64_t*)));
     CUDA_CALL(cudaMemcpyToSymbol(d_light_size, &_light_size, sizeof(uint32_t)));
+    CUDA_CALL(cudaMemcpyToSymbol(d_inv_dag, &inv_dag, sizeof(uint32_t)));
+    CUDA_CALL(cudaMemcpyToSymbol(d_shift_dag, &shift_dag, sizeof(int)));
 }
 
 void get_constants(hash128_t** _dag, uint32_t* _dag_size, hash64_t** _light, uint32_t* _light_size) {

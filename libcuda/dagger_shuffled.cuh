@@ -13,6 +13,17 @@
 
 #include "cuda_helper.h"
 
+// computes a mod dag_size
+__device__ __forceinline__ uint32_t mod(uint32_t a) {
+
+    uint32_t d = __umulhi(a, d_inv_dag) >> d_shift_dag;
+    uint32_t r = a - d * d_dag_size; 
+
+    // can also be replaced by: VADDx(r, r, m, r, "min") // == umin(r, r + m);
+    //if ((int)r < 0) //58.5
+        //r += d;
+    return r;
+}
 #define _PARALLEL_HASH 4
 
 DEV_INLINE bool compute_hash(uint64_t nonce) {
@@ -61,8 +72,10 @@ DEV_INLINE bool compute_hash(uint64_t nonce) {
 
             for (uint32_t b = 0; b < 4; b++) {
                 for (int p = 0; p < _PARALLEL_HASH; p++) {
-                    offset[p] = fnv(init0[p] ^ (a + b), ((uint32_t*)&mix[p])[b]) % d_dag_size;
-                    offset[p] = SHFL(offset[p], t, THREADS_PER_HASH);
+                    //offset[p] = fnv(init0[p] ^ (a + b), ((uint32_t*)&mix[p])[b]) % d_dag_size;
+                    //offset[p] = SHFL(offset[p], t, THREADS_PER_HASH);
+                     const uint32_t temp = mod( fnv(init0[p] ^ (a + b), ((uint32_t*)&mix[p])[b]) );
+                     offset[p] = SHFL(temp, t, THREADS_PER_HASH);
                     mix[p] = fnv4(mix[p], d_dag[offset[p]].uint4s[thread_id]);
                 }
             }
