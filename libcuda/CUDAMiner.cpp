@@ -111,13 +111,8 @@ bool CUDAMiner::initEpoch() {
 
         HostToDevice(light, m_epochContext.lightCache, m_epochContext.lightSize);
 
-        uint32_t inv_dag;   // TODO: Add proof of exactness
-        int shift_dag = 0;
-        while ((inv_dag = (0x100000000 << shift_dag)/m_epochContext.dagNumItems + 1) < 0x80000000)
-            shift_dag++;
-
-        set_constants(dag, m_epochContext.dagNumItems, light,
-                      m_epochContext.lightNumItems, inv_dag, shift_dag); // in ethash_cuda_miner_kernel.cu
+        set_constants(dag, m_epochContext.dagNumItems, light, m_epochContext.lightNumItems,
+            m_epochContext.dagInv, m_epochContext.dagShift); // in ethash_cuda_miner_kernel.cu
 
         ethash_generate_dag(m_epochContext.dagSize, m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[0]);
 
