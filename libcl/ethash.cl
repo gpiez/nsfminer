@@ -247,8 +247,7 @@ static uint mod(uint a, uint dag_size, uint dag_inv, uint dag_shift) {
     uint r = a - d * dag_size;
     return r;
 }
-// buffer[get_local_id(0)] = fnv(init0 ^ (a + x), ((uint*)&mix)[x]) % dag_size;
-// buffer[get_local_id(0)] = fnv(init0 ^ (a + x), ((uint*)&mix)[x]) % dag_size;
+
 #ifdef SPLIT_DAG
 #define MIX(x)                                                                       \
     do                                                                               \
