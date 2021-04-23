@@ -17,7 +17,7 @@
 
  // computes a mod dag_size
 DEV_INLINE uint32_t mod(uint32_t a) {
-    uint32_t d = __umulhi(a, d_inv_dag) >> d_shift_dag;
+    uint32_t d = __umulhi(a, d_dag_inv) >> d_dag_shift;
     uint32_t r = a - d * d_dag_size; 
     return r;
 }
