@@ -30,8 +30,8 @@ cable_configure_toolchain(DEFAULT cxx17)
 set(HUNTER_CONFIGURATION_TYPES Release CACHE STRING "Build type of Hunter packages")
 set(HUNTER_JOBS_NUMBER 12 CACHE STRING "Number of parallel builds used by Hunter")
 HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.23.297.tar.gz"
-    SHA1 "3319fe6a3b08090df7df98dee75134d68e2ef5a3"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.23.299.tar.gz"
+    SHA1 "3d215b4bfac80824778fe9a93510e5f651d79e3a"
     LOCAL
 )
 
@@ -45,7 +45,6 @@ option(ETHASHCUDA "Build with CUDA mining" ON)
 option(ETHASHCPU "Build with CPU mining (only for development)" OFF)
 option(APICORE "Build with API Server support" ON)
 option(DEVBUILD "Log developer metrics" OFF)
-option(OLDCXX "" OFF)
 
 # propagates CMake configuration options to the compiler
 function(configureProject)
